@@ -51,6 +51,25 @@ class gradientDescent(object):
     else:
       return 2*w + (self.c/n) * ((2*(1+self.h-yt)/(4*self.h)) * self.computeYderT() )
 
+  def getNumericalResultAtEachDirection(self, w, epslon, eachdir):
+    print "w", w, "eachdir", eachdir
+    print "w-epslon*eachdir", w-epslon*eachdir
+    return (self.compute_obj(w+epslon*eachdir) - self.compute_obj(w-epslon*eachdir))/(2*epslon)
+
+  def grad_checker(self, w):
+    epslon = float(0.1/10**7)
+    uniDirection = np.zeros((len(w), len(w)), int)
+    np.fill_diagonal(uniDirection, 1)
+
+    numericalResult = map(lambda x: self.getNumericalResultAtEachDirection(w, epslon, x), uniDirection)
+    analyticResult = self.compute_grad(w)
+
+    print "numericalResult", numericalResult
+    print "analyticResult", analyticResult
+
+    return (numericalResult-analyticResult)/analyticResult
+
+
 x = np.array([np.ones(5), np.ones(5), np.ones(5), np.ones(5), np.ones(5), np.ones(5)])
 y = np.array([-1, -1, 1, 1, -1, -1])
 
@@ -58,6 +77,7 @@ gd = gradientDescent(y, x)
 w = np.array([1, 1, 0, 1, 0])
 gd.compute_obj(w)
 print gd.compute_grad(w)
+print gd.grad_checker(w)
 
 
 
