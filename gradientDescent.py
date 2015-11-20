@@ -1,5 +1,6 @@
 import numpy as np
 import random, sys
+from sklearn import preprocessing
 import matplotlib.pyplot as plt
 
 def lossHinge(yt):
@@ -19,7 +20,7 @@ class gradientDescent(object):
     self.y = y
     self.X = X
     self.h = 0.3
-    self.c = 1
+    self.c = 2
 
   def computeYT(self, w):
     wt = map(lambda x: np.dot(w, x), self.X)
@@ -31,33 +32,32 @@ class gradientDescent(object):
     derwt = map(lambda x: np.dot(derW, x), self.X)
     return np.dot(self.y, derwt)
 
-  def compute_obj(self, w):
-    yt = self.computeYT(w)
-    n = float(len(self.y))
-    if yt > 1+self.h:
-      return np.dot(w, w)
-    elif yt < 1-self.h:
-      return np.dot(w, w) + (self.c/n)*(1-yt)
+  def lossF(self, myinput):
+    y, wx = myinput
+    if y*wx > 1+self.h:
+      return 0
+    elif y*wx < 1-self.h:
+      return 1-y*wx
     else:
-      return np.dot(w, w) + (self.c/n)*(1+self.h-yt)**2/4*self.h
+      return (1+h-y*wx)**2/(4*self.h)
+
+  def compute_obj(self, w):
+    n = self.X.shape[0]
+    wx = np.apply_along_axis(lambda x: np.dot(w, x), 1, self.X)
+    return np.dot(w, w) + (self.c/n)*sum(map(self.lossF, zip(self.y, wx)) )
+
 
   def compute_grad(self, w):
-    yt = self.computeYT(w)
-    n = float(len(self.y))
-    if yt > 1+self.h:
-      return 2*w
-    elif yt < 1-self.h:
-      return 2*w + (self.c/n)*(self.computeYderT())
-    else:
-      return 2*w + (self.c/n) * ((2*(1+self.h-yt)/(4*self.h)) * self.computeYderT() )
+    unit = np.ones(self.X.shape[1])
+    wx = np.apply_along_axis(lambda x: np.dot(unit, x), 1, self.X)
+    print "compute_grad", 2*w, sum(map(self.lossF, zip(self.y, wx)) ), 2*w + sum(map(self.lossF, zip(self.y, wx)) )
+    return 2*w + sum(map(self.lossF, zip(self.y, wx)) )
 
   def getNumericalResultAtEachDirection(self, w, epslon, eachdir):
-    print "w", w, "eachdir", eachdir
-    print "w-epslon*eachdir", w-epslon*eachdir
     return (self.compute_obj(w+epslon*eachdir) - self.compute_obj(w-epslon*eachdir))/(2*epslon)
 
   def grad_checker(self, w):
-    epslon = float(0.1/10**7)
+    epslon = float(0.1/10**8)
     uniDirection = np.zeros((len(w), len(w)), int)
     np.fill_diagonal(uniDirection, 1)
 
@@ -69,17 +69,37 @@ class gradientDescent(object):
 
     return (numericalResult-analyticResult)/analyticResult
 
-
-x = np.array([np.ones(5), np.ones(5), np.ones(5), np.ones(5), np.ones(5), np.ones(5)])
+min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
+x = np.array([np.zeros(5), np.zeros(5), np.ones(5), np.ones(5), np.zeros(5), np.zeros(5)])
+x = min_max_scaler.fit_transform(x)
 y = np.array([-1, -1, 1, 1, -1, -1])
 
 gd = gradientDescent(y, x)
 w = np.array([1, 1, 0, 1, 0])
 gd.compute_obj(w)
-print gd.compute_grad(w)
-print gd.grad_checker(w)
+gd.compute_grad(w)
+print "grad_checker", gd.grad_checker(w)
 
 
 
 
 
+  # def compute_obj(self, w):
+  #   yt = self.computeYT(w)
+  #   n = float(len(self.y))
+  #   if yt > 1+self.h:
+  #     return np.dot(w, w)
+  #   elif yt < 1-self.h:
+  #     return np.dot(w, w) + (self.c/n)*(1-yt)
+  #   else:
+  #     return np.dot(w, w) + (self.c/n)*(1+self.h-yt)**2/4*self.h
+
+  # def compute_grad(self, w):
+  #   yt = self.computeYT(w)
+  #   n = float(len(self.y))
+  #   if yt > 1+self.h:
+  #     return 2*w
+  #   elif yt < 1-self.h:
+  #     return 2*w - (self.c/n)*(self.computeYderT())
+  #   else:
+  #     return 2*w + (self.c/n) * ((2*(1+self.h-yt)/(4*self.h)) * self.computeYderT() )
