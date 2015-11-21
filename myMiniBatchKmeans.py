@@ -21,27 +21,33 @@ class miniBatchKmeans(object):
     self.initMethod = initMethod
     self.max_iter = kwargs.get('max_iter', 100)
     self.batch_size = kwargs.get('batch_size', 100)
+    self.randState = kwargs.get('randState', 1985)
 
-  def getClosestDist(self, centers, x):
+  def getClosestDist(self, centers, x, returnIdx=False):
     min_dis = sys.float_info.max
     shortestCenter_idx = -1
-    for eachC in centers:
+    for eachC_idx in xrange(len(centers)):
+      eachC = centers[eachC_idx]
       if len(eachC) == 0:
         pass
       else:
         dist = euclidean(eachC, x)
         if dist < min_dis:
           min_dis = dist
-    return min_dis
+          shortestCenter_idx = eachC_idx
+    return (min_dis if not returnIdx else shortestCenter_idx)
 
   def getEuclideanDist(self, centers, X):
     return map(lambda eachx:self.getClosestDist(centers, eachx), X)
 
-  def _kpp(self, X, n_clusters, randState, **kwargs):
+  def getCloestCenter(self, centers, X):
+    return map(lambda eachx:self.getClosestDist(centers, eachx, True), X)
+
+  def _kpp(self, X, n_clusters, **kwargs):
     n_samples, n_features = X.shape
     centers = np.empty((n_clusters, n_features))
 
-    rng = np.random.RandomState(randState)
+    rng = np.random.RandomState(self.randState)
     first_id = rng.randint(n_samples)
     centers[0] = X[first_id]
 
@@ -55,8 +61,8 @@ class miniBatchKmeans(object):
       probabilityDist = np.array(distances)/sum(distances)
     return centers
 
-  def initCentroids(self, X, initMethod, n_clusters, randState, **kwargs):
-    rng = np.random.RandomState(randState)
+  def initCentroids(self, X, initMethod, n_clusters, **kwargs):
+    rng = np.random.RandomState(self.randState)
     n_samples = X.shape[0]
     init_size = kwargs.get('init_size', 3*n_clusters)
     init_size = (n_samples if init_size>n_samples else init_size)
@@ -65,34 +71,81 @@ class miniBatchKmeans(object):
     n_samples = X.shape[0]
 
     if isinstance(initMethod, str) and initMethod == 'k-means++':
-      centers = self._kpp(X, n_clusters, randState)
+      centers = self._kpp(X, n_clusters)
     elif isinstance(initMethod, str) and initMethod == 'random':
       permuteIdx = rng.permutation(n_samples)[:k]
       centers = X[permuteIdx]
 
     return centers
 
+  def minibatchCenterUpdate(self, X, centroids):
+    C = self.getCloestCenter(centroids, X)
+
+
+
+
+  def _mini_batch_step(self, X, centers, counts, **kwargs):
+    compute_squared_diff = kwargs.get('compute_squared_diff', False)
+    x2cloestC = np.array(self.getCloestCenter(centers, X))
+    k = centers.shape[0]
+    squared_diff = 0.0
+
+    for center_idx in range(k):
+      center_mask = x2cloestC == center_idx
+      count = center_mask.sum()
+      if count > 0:
+        if compute_squared_diff:
+          old_centers=[]
+          old_centers = np.copy(centers[center_idx])
+        #this center times original counts
+        centers[center_idx] *= counts[center_idx]
+        #this center plus all x that close to it
+        centers[center_idx] += np.sum(X[center_mask], axis=0)
+        #update counts
+        counts[center_idx] += count
+        #this center divided by new counts
+        centers[center_idx] /= counts[center_idx]
+        if compute_squared_diff:
+          diff = centers[center_idx].ravel() - old_centers.ravel()
+          squared_diff += np.dot(diff, diff)
+    return squared_diff
+
   def run(self, X):
     n_samples, n_features = X.shape
+    counts = np.zeros(self.n_clusters, dtype=np.int32)
+    rng = np.random.RandomState(self.randState)
     distances = np.zeros(self.batch_size, dtype=np.float64)
     n_batches = int(np.ceil(float(n_samples) / self.batch_size))
     n_iter = int(self.max_iter * n_batches)
-    centroids = self.initCentroids(X, self.initMethod, self.n_clusters, 19850920)
-    # for iteration_idx in range(n_iter):
+    print "n_iter is", n_iter
+
+    shuffle_indices = rng.random_integers(0, n_samples - 1, n_samples)
+    X = X[shuffle_indices] #shuffle samples
+
+    centroids = self.initCentroids(X, self.initMethod, self.n_clusters)
+    squared_diff = self._mini_batch_step(X, centroids, counts, compute_squared_diff=True) #list is iterable, will be updated inside _mini_batch_step
+
+    for iteration_idx in range(n_iter):
+      print "squared_diff", squared_diff
+      minibatch_indices = rng.random_integers(0, n_samples - 1, self.batch_size)
+      squared_diff = self._mini_batch_step(X[minibatch_indices], centroids, counts, compute_squared_diff=True)
 
 
-X, y = pt.dataset_fixed_cov(300, 10, 3) #n, dim, overlapped dist
-print "X.shape", X.shape, "X[0]", X[0]
-pt.plotPCA(X, y)
-# min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
-# X = min_max_scaler.fit_transform(X)
-# rng = np.random.RandomState(19850920)
-# permutation = rng.permutation(len(X))
-# X, y = X[permutation], y[permutation]
-# train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
+X, y = pt.dataset_fixed_cov(300, 2, 3) #n, dim, overlapped dist
+# pt.plotPCA(X, y)
+min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
+X = min_max_scaler.fit_transform(X)
+rng = np.random.RandomState(19850920)
+permutation = rng.permutation(len(X))
+X, y = X[permutation], y[permutation]
+train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
 
-# mbk = miniBatchKmeans(8, max_iter=10, batch_size=50)
-# mbk.run(train_X)
+mbk = miniBatchKmeans(8, max_iter=600, batch_size=50)
+mbk.run(train_X)
+
+
+
+
 
 
 # batch_size = 10
