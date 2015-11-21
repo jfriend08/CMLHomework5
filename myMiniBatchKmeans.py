@@ -1,5 +1,6 @@
 import numpy as np
 import random, sys
+import points as pt
 from sklearn import preprocessing
 from sklearn.cross_validation import train_test_split
 from  scipy.spatial.distance import euclidean
@@ -72,20 +73,26 @@ class miniBatchKmeans(object):
     return centers
 
   def run(self, X):
+    n_samples, n_features = X.shape
+    distances = np.zeros(self.batch_size, dtype=np.float64)
+    n_batches = int(np.ceil(float(n_samples) / self.batch_size))
+    n_iter = int(self.max_iter * n_batches)
     centroids = self.initCentroids(X, self.initMethod, self.n_clusters, 19850920)
-    
+    # for iteration_idx in range(n_iter):
 
 
-X, y = dataset_fixed_cov(300, 2, C = np.array([[0.5, -0.23], [0.83, .23]]) ) #n, d, C
-min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
-X = min_max_scaler.fit_transform(X)
-rng = np.random.RandomState(19850920)
-permutation = rng.permutation(len(X))
-X, y = X[permutation], y[permutation]
-train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
+X, y = pt.dataset_fixed_cov(300, 10) #n, d
+print "X.shape", X.shape, "X[0]", X[0]
+pt.plotPCA(X, y)
+# min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
+# X = min_max_scaler.fit_transform(X)
+# rng = np.random.RandomState(19850920)
+# permutation = rng.permutation(len(X))
+# X, y = X[permutation], y[permutation]
+# train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
 
-mbk = miniBatchKmeans(8, max_iter=10, batch_size=50)
-mbk.run(train_X)
+# mbk = miniBatchKmeans(8, max_iter=10, batch_size=50)
+# mbk.run(train_X)
 
 
 # batch_size = 10
