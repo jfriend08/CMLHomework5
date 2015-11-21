@@ -39,7 +39,18 @@ class gradientDescent(object):
     elif y*wx < 1-self.h:
       return 1-y*wx
     else:
-      return (1+h-y*wx)**2/(4*self.h)
+      return (1+self.h-y*wx)**2/(4*self.h)
+
+  def lossF_dir(self, w, x, myinput):
+    y, wx = myinput
+    unit = np.ones(self.X.shape[1])
+    dirwx = np.apply_along_axis(lambda x: np.dot(unit, x), 1, self.X)
+    if y*wx > 1+self.h:
+      return 0
+    elif y*wx < 1-self.h:
+      return -y*dirwx
+    else:
+      return (2*(1+self.h-y*wx)/(4*self.h))*(-1)*y*dirwx
 
   def compute_obj(self, w):
     n = self.X.shape[0]
@@ -48,10 +59,12 @@ class gradientDescent(object):
 
 
   def compute_grad(self, w):
-    unit = np.ones(self.X.shape[1])
-    wx = np.apply_along_axis(lambda x: np.dot(unit, x), 1, self.X)
-    print "compute_grad", 2*w, sum(map(self.lossF, zip(self.y, wx)) ), 2*w + sum(map(self.lossF, zip(self.y, wx)) )
-    return 2*w + sum(map(self.lossF, zip(self.y, wx)) )
+    wx = np.apply_along_axis(lambda x: np.dot(w, x), 1, self.X)
+    return 2*w + sum(map(lambda x: self.lossF_dir(w, self.X, x), zip(self.y, wx)) )
+
+    # unit = np.ones(self.X.shape[1])
+    # wx = np.apply_along_axis(lambda x: np.dot(unit, x), 1, self.X)
+    # return 2*w + sum(map(self.lossF, zip(self.y, wx)) )
 
   def getNumericalResultAtEachDirection(self, w, epslon, eachdir):
     return (self.compute_obj(w+epslon*eachdir) - self.compute_obj(w-epslon*eachdir))/(2*epslon)
@@ -60,14 +73,11 @@ class gradientDescent(object):
     epslon = float(0.1/10**8)
     uniDirection = np.zeros((len(w), len(w)), int)
     np.fill_diagonal(uniDirection, 1)
-
     numericalResult = map(lambda x: self.getNumericalResultAtEachDirection(w, epslon, x), uniDirection)
     analyticResult = self.compute_grad(w)
-
     print "numericalResult", numericalResult
     print "analyticResult", analyticResult
-
-    return (numericalResult-analyticResult)/analyticResult
+    return sum(numericalResult-analyticResult)/sum(analyticResult)
 
 min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
 x = np.array([np.zeros(5), np.zeros(5), np.ones(5), np.ones(5), np.zeros(5), np.zeros(5)])
@@ -76,11 +86,13 @@ y = np.array([-1, -1, 1, 1, -1, -1])
 
 gd = gradientDescent(y, x)
 w = np.array([1, 1, 0, 1, 0])
+# w = np.array([1, 1, -1, 1, 1])
 gd.compute_obj(w)
 gd.compute_grad(w)
-print "grad_checker", gd.grad_checker(w)
 
-
+for i in xrange(5):
+  w = np.random.rand(1,5).flatten()
+  print i, "th checking: error sum", gd.grad_checker(w)
 
 
 
