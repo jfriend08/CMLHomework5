@@ -81,7 +81,7 @@ class miniBatchKmeans(object):
     # for iteration_idx in range(n_iter):
 
 
-X, y = pt.dataset_fixed_cov(300, 10) #n, d
+X, y = pt.dataset_fixed_cov(300, 10, 3) #n, dim, overlapped dist
 print "X.shape", X.shape, "X[0]", X[0]
 pt.plotPCA(X, y)
 # min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)

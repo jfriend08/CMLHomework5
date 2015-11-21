@@ -6,7 +6,7 @@ from matplotlib import colors
 from sklearn.decomposition import PCA
 
 
-def dataset_fixed_cov(n,dim):
+def dataset_fixed_cov(n,dim, dist):
   '''Generate 2 Gaussians samples with the same covariance matrix'''
   np.random.seed(0)
   w = np.random.randint(100, size=(1, 5)).flatten()
@@ -14,7 +14,7 @@ def dataset_fixed_cov(n,dim):
   print C
   print "C.shape", C.shape
   X = np.r_[np.dot(np.random.randn(n, dim), C),
-            np.dot(np.random.randn(n, dim), C) + 4*np.ones(dim)]
+            np.dot(np.random.randn(n, dim), C) + dist*np.ones(dim)]
   y = np.hstack((np.zeros(n), np.ones(n)))
   return X, y
 
