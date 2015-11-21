@@ -4,6 +4,7 @@ import points as pt
 from sklearn import preprocessing
 from sklearn.cross_validation import train_test_split
 from  scipy.spatial.distance import euclidean
+import cPickle as pickle
 
 def dataset_fixed_cov(n, dim, C):
   '''Generate 2 Gaussians samples with the same covariance matrix'''
@@ -14,6 +15,38 @@ def dataset_fixed_cov(n, dim, C):
             np.dot(np.random.randn(n, dim), C) + np.array([1, 1])]
   y = np.hstack((np.zeros(n), np.ones(n)))
   return X, y
+
+def getData(path, **kwargs):
+  selectGenre = kwargs.get('selectGenre', None)
+  samples = pickle.load( open( path, "rb" ) )
+  X = []
+  y = []
+  for genere_idx in xrange(len(samples.keys())):
+    genere = samples.keys()[genere_idx]
+    songs = samples[genere]
+    for song_idx in xrange(len(songs)):
+      song = songs[song_idx]
+      song = [clip[:66058] for clip in song] #some clip has different num of signal
+      X.append(song)
+      y.append(genere_idx)
+  print "X size/number of songs:", len(X)
+  print "Number of clips per song:", len(X[0])
+  print "y size:", len(y)
+  return np.array(X), np.array(y)
+
+def selectGenre(X, y, selectGenre):
+  selectGenre = 1
+  selecty = y[y==selectGenre]
+  selectX = X[y==selectGenre]
+  remainy = y[y!=selectGenre]
+  remainX = X[y!=selectGenre]
+
+  rng = np.random.RandomState(0)
+  permutation = rng.permutation(len(remainX))
+  X_new = np.r_[selectX,remainX[permutation][:len(selectX)]]
+  y_new = np.r_[selecty,-1*np.ones(len(selectX))]
+
+  return X_new, y_new
 
 class miniBatchKmeans(object):
   def __init__(self, n_clusters=8, initMethod='k-means++', **kwargs):
@@ -131,17 +164,27 @@ class miniBatchKmeans(object):
       squared_diff = self._mini_batch_step(X[minibatch_indices], centroids, counts, compute_squared_diff=True)
 
 
-X, y = pt.dataset_fixed_cov(300, 2, 3) #n, dim, overlapped dist
-# pt.plotPCA(X, y)
-min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
-X = min_max_scaler.fit_transform(X)
-rng = np.random.RandomState(19850920)
-permutation = rng.permutation(len(X))
-X, y = X[permutation], y[permutation]
-train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
 
-mbk = miniBatchKmeans(8, max_iter=600, batch_size=50)
-mbk.run(train_X)
+
+# # X, y = pt.dataset_fixed_cov(500, 10, 3) #n, dim, overlapped dist
+# print "X.shape", X.shape
+# # pt.plotPCA(X, y)
+
+X, y = getData("../homework2/data/data_small8.in", )
+X_new, y_new = selectGenre(X, y, 0)
+print "X_new.shape", X_new.shape, "y_new.shape", y_new.shape
+print y_new
+
+
+# min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
+# X = min_max_scaler.fit_transform(X)
+# rng = np.random.RandomState(19850920)
+# permutation = rng.permutation(len(X))
+# X, y = X[permutation], y[permutation]
+# train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
+
+# mbk = miniBatchKmeans(8, max_iter=600, batch_size=50)
+# mbk.run(train_X)
 
 
 
