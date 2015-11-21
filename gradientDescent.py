@@ -55,26 +55,26 @@ class gradientDescent(object):
   def compute_obj(self, w):
     n = self.X.shape[0]
     wx = np.apply_along_axis(lambda x: np.dot(w, x), 1, self.X)
-    return np.dot(w, w) + (self.c/n)*sum(map(self.lossF, zip(self.y, wx)) )
+    return np.dot(w, w) + (self.c/n)*sum(np.apply_along_axis(self.lossF, 1, zip(self.y, wx)) )
 
 
   def compute_grad(self, w):
     wx = np.apply_along_axis(lambda x: np.dot(w, x), 1, self.X)
-    return 2*w + sum(map(lambda x: self.lossF_dir(w, self.X, x), zip(self.y, wx)) )
+    return 2*w + sum(np.apply_along_axis(lambda x: self.lossF_dir(w, self.X, x), 1, zip(self.y, wx)) )
 
     # unit = np.ones(self.X.shape[1])
     # wx = np.apply_along_axis(lambda x: np.dot(unit, x), 1, self.X)
     # return 2*w + sum(map(self.lossF, zip(self.y, wx)) )
 
-  def getNumericalResultAtEachDirection(self, w, epslon, eachdir):
-    return (self.compute_obj(w+epslon*eachdir) - self.compute_obj(w-epslon*eachdir))/(2*epslon)
+  def getNumericalResultAtEachDirection(self, compute_obj, w, epslon, eachdir):
+    return (compute_obj(w+epslon*eachdir) - compute_obj(w-epslon*eachdir))/(2*epslon)
 
-  def grad_checker(self, w):
+  def grad_checker(self, compute_obj, compute_grad, w):
     epslon = float(0.1/10**8)
     uniDirection = np.zeros((len(w), len(w)), int)
     np.fill_diagonal(uniDirection, 1)
-    numericalResult = map(lambda x: self.getNumericalResultAtEachDirection(w, epslon, x), uniDirection)
-    analyticResult = self.compute_grad(w)
+    numericalResult = np.apply_along_axis(lambda x: self.getNumericalResultAtEachDirection(compute_obj, w, epslon, x), 1, uniDirection)
+    analyticResult = compute_grad(w)
     print "numericalResult", numericalResult
     print "analyticResult", analyticResult
     return sum(numericalResult-analyticResult)/sum(analyticResult)
@@ -86,13 +86,12 @@ y = np.array([-1, -1, 1, 1, -1, -1])
 
 gd = gradientDescent(y, x)
 w = np.array([1, 1, 0, 1, 0])
-# w = np.array([1, 1, -1, 1, 1])
 gd.compute_obj(w)
 gd.compute_grad(w)
 
 for i in xrange(5):
-  w = np.random.rand(1,5).flatten()
-  print i, "th checking: error sum", gd.grad_checker(w)
+  w = np.random.randint(100, size=(1, 5)).flatten()
+  print i, "th checking: error sum", gd.grad_checker(gd.compute_obj, gd.compute_grad, w)
 
 
 
