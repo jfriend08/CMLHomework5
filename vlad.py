@@ -105,54 +105,54 @@ def my_vlad(centers, X, y, transpose=True):
 
 
 
-centers = np.array(
-  [[ 0.12455026,  0.12589914, -0.12758974,  0.138313,   -0.10902273,  0.12275701,-0.15445272,  0.04824689, -0.09092256,  0.22765484,  0.00157361,  0.09746945],
-   [ 0.13949584,  0.12110779,  0.06468275,  0.10524045,  0.09770974,  0.15314491,0.06903171,  0.15934369, -0.01715376,  0.08812701,  0.02516624,  0.06107955],
-   [ 0.12602307,  0.13282984, -0.11469537,  0.14521176, -0.12193538,  0.08603053,-0.20165656,  0.06584635, -0.14003101,  0.10053826, -0.11766645,  0.09690807],
-   [ 0.13041553,  0.12676358, -0.06865276,  0.13890042, -0.091898,    0.12733449,-0.09334595,  0.18043392, -0.11214386,  0.11356557, -0.15927186,  0.06240254],
-   [ 0.14529536,  0.09225925,  0.00862161,  0.05767342,  0.01234768,  0.05260295,  -0.06143607,  0.03186934, -0.01837779, -0.05159241, -0.09900298, -0.10201332],
-   [ 0.12025221,  0.12779263, -0.14943618,  0.11613325, -0.1018837,   0.1238181, -0.07858684, -0.02594327, -0.13208168,  0.06386554,  0.05935377,  0.20633186],
-   [ 0.12135699,  0.13617754, -0.14722568,  0.07956322, -0.16947128,  0.12307407, -0.04534169,  0.07184431, -0.17814921, -0.05708589, -0.16669711,  0.07424351],
-   [ 0.115089,    0.13814819, -0.14351122,  0.14969473, -0.06354044,  0.12761665, -0.00318303,  0.00512991, -0.03940165,  0.05467843, -0.05587058, -0.03259541]
-   ])
-print "centers.shape", centers.shape, centers
+# centers = np.array(
+#   [[ 0.12455026,  0.12589914, -0.12758974,  0.138313,   -0.10902273,  0.12275701,-0.15445272,  0.04824689, -0.09092256,  0.22765484,  0.00157361,  0.09746945],
+#    [ 0.13949584,  0.12110779,  0.06468275,  0.10524045,  0.09770974,  0.15314491,0.06903171,  0.15934369, -0.01715376,  0.08812701,  0.02516624,  0.06107955],
+#    [ 0.12602307,  0.13282984, -0.11469537,  0.14521176, -0.12193538,  0.08603053,-0.20165656,  0.06584635, -0.14003101,  0.10053826, -0.11766645,  0.09690807],
+#    [ 0.13041553,  0.12676358, -0.06865276,  0.13890042, -0.091898,    0.12733449,-0.09334595,  0.18043392, -0.11214386,  0.11356557, -0.15927186,  0.06240254],
+#    [ 0.14529536,  0.09225925,  0.00862161,  0.05767342,  0.01234768,  0.05260295,  -0.06143607,  0.03186934, -0.01837779, -0.05159241, -0.09900298, -0.10201332],
+#    [ 0.12025221,  0.12779263, -0.14943618,  0.11613325, -0.1018837,   0.1238181, -0.07858684, -0.02594327, -0.13208168,  0.06386554,  0.05935377,  0.20633186],
+#    [ 0.12135699,  0.13617754, -0.14722568,  0.07956322, -0.16947128,  0.12307407, -0.04534169,  0.07184431, -0.17814921, -0.05708589, -0.16669711,  0.07424351],
+#    [ 0.115089,    0.13814819, -0.14351122,  0.14969473, -0.06354044,  0.12761665, -0.00318303,  0.00512991, -0.03940165,  0.05467843, -0.05587058, -0.03259541]
+#    ])
+# print "centers.shape", centers.shape, centers
 
 
-X, y = getData("../homework2/data/data_small5.in", )
-X_new, y_new = selectGenre(X, y, 0)
+# X, y = getData("../homework2/data/data_small5.in", )
+# X_new, y_new = selectGenre(X, y, 0)
 
-print "X_new.shape", X_new.shape, "y_new.shape", y_new.shape
-print y_new
+# print "X_new.shape", X_new.shape, "y_new.shape", y_new.shape
+# print y_new
 
-rng = np.random.RandomState(1985)
-permutation = rng.permutation(len(X_new))
-X_new, y_new = X_new[permutation], y_new[permutation]
-train_X, test_X, train_y, test_y = train_test_split(X_new, y_new, train_size=0.75, random_state=2010)
+# rng = np.random.RandomState(1985)
+# permutation = rng.permutation(len(X_new))
+# X_new, y_new = X_new[permutation], y_new[permutation]
+# train_X, test_X, train_y, test_y = train_test_split(X_new, y_new, train_size=0.75, random_state=2010)
 
-trainX_centerSubstract, trainy_centerSubstract = my_vlad(centers, train_X, train_y)
-testX_centerSubstract, testy_centerSubstract = my_vlad(centers, test_X, test_y)
+# trainX_centerSubstract, trainy_centerSubstract = my_vlad(centers, train_X, train_y)
+# testX_centerSubstract, testy_centerSubstract = my_vlad(centers, test_X, test_y)
 
-from sklearn.grid_search import GridSearchCV
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import MultinomialNB
+# from sklearn.grid_search import GridSearchCV
+# from sklearn.neighbors import KNeighborsClassifier
+# from sklearn.naive_bayes import MultinomialNB
 
-# # clf = MultinomialNB().fit(trainX_centerSubstract, train_y)
-# clf = KNeighborsClassifier().fit(trainX_centerSubstract, train_y)
-# predicted = clf.predict(testX_centerSubstract)
-# print "naive bayes", np.mean(predicted == test_y)
+# # # clf = MultinomialNB().fit(trainX_centerSubstract, train_y)
+# # clf = KNeighborsClassifier().fit(trainX_centerSubstract, train_y)
+# # predicted = clf.predict(testX_centerSubstract)
+# # print "naive bayes", np.mean(predicted == test_y)
 
-param_grid = {'n_neighbors': np.arange(3, 10),'weights':('uniform', 'distance'), 'algorithm':('auto','ball_tree', 'kd_tree', 'brute') }
-np.set_printoptions(suppress=True)
-grid_search = GridSearchCV(KNeighborsClassifier(), param_grid, verbose=3)
+# param_grid = {'n_neighbors': np.arange(3, 10),'weights':('uniform', 'distance'), 'algorithm':('auto','ball_tree', 'kd_tree', 'brute') }
+# np.set_printoptions(suppress=True)
+# grid_search = GridSearchCV(KNeighborsClassifier(), param_grid, verbose=3)
 
-print "trainX_centerSubstract.shape", trainX_centerSubstract.shape, "trainy_centerSubstract.shape", trainy_centerSubstract.shape
-print "testX_centerSubstract.shape", testX_centerSubstract.shape, "testy_centerSubstract.shape", testy_centerSubstract.shape
-print "train_y.shape", train_y.shape
-grid_search.fit(trainX_centerSubstract, trainy_centerSubstract)
-print "----------------", "Done grid search", "----------------"
-predict = grid_search.predict(testX_centerSubstract)
-print grid_search.score(testX_centerSubstract, testy_centerSubstract)
-print grid_search.best_params_
+# print "trainX_centerSubstract.shape", trainX_centerSubstract.shape, "trainy_centerSubstract.shape", trainy_centerSubstract.shape
+# print "testX_centerSubstract.shape", testX_centerSubstract.shape, "testy_centerSubstract.shape", testy_centerSubstract.shape
+# print "train_y.shape", train_y.shape
+# grid_search.fit(trainX_centerSubstract, trainy_centerSubstract)
+# print "----------------", "Done grid search", "----------------"
+# predict = grid_search.predict(testX_centerSubstract)
+# print grid_search.score(testX_centerSubstract, testy_centerSubstract)
+# print grid_search.best_params_
 
 
 

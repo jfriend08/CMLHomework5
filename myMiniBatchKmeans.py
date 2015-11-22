@@ -214,24 +214,27 @@ class miniBatchKmeans(object):
 
 
 
-X, y = getData("../homework2/data/data_small5.in", )
-X_new, y_new = selectGenre(X, y, 0)
+# X, y = getData("../homework2/data/data_small5.in", )
+# X_new, y_new = selectGenre(X, y, 0)
 
-print "X_new.shape", X_new.shape, "y_new.shape", y_new.shape
-print y_new
+# print "X_new.shape", X_new.shape, "y_new.shape", y_new.shape
+# print y_new
 
-rng = np.random.RandomState(19850920)
-permutation = rng.permutation(len(X_new))
-X_new, y_new = X_new[permutation], y_new[permutation]
-train_X, test_X, train_y, test_y = train_test_split(X_new, y_new, train_size=0.8, random_state=2010)
+# rng = np.random.RandomState(19850920)
+# permutation = rng.permutation(len(X_new))
+# X_new, y_new = X_new[permutation], y_new[permutation]
+# train_X, test_X, train_y, test_y = train_test_split(X_new, y_new, train_size=0.8, random_state=2010)
 
-X_new_features = featureExtraction(train_X)
-print "X_new_features.shape", X_new_features.shape
-mbk = miniBatchKmeans(8, max_iter=100, batch_size=10000)
-mbk.fix(X_new_features)
-distortion, centroids = mbk.getBestCentroids()
-print "distortion", distortion, "centroids.shape", centroids.shape
-print centroids
+# X_new_features = featureExtraction(train_X)
+# print "X_new_features.shape", X_new_features.shape
+# mbk = miniBatchKmeans(8, max_iter=100, batch_size=10000)
+# mbk.fix(X_new_features)
+# distortion, centroids = mbk.getBestCentroids()
+# print "distortion", distortion, "centroids.shape", centroids.shape
+# print centroids
+
+
+
 
 
 
