@@ -130,11 +130,21 @@ class gradientDescent(object):
     compute_grad = kwargs.get('compute_grad', self.compute_grad) #user can specify the function
     iterCount = 0
     wIter = [w]
-    if Step_backtrack:
-      
+    def getStep_backtrack(w):
+      if Step_backtrack:
+        direction = compute_grad(w)
+        t = 1
+        a = 0.9
+        b = 0.5
+        dw = np.ones(len(w))
+        while compute_obj(w+t*dw) > compute_obj(w) + a*t*np.dot(compute_grad(w),dw):
+          t *= b
+        return t
+
     print "------------------", "h", self.h, "c", self.c, "maxiter", self.maxiter, "ita", self.ita, "------------------"
     while iterCount < self.maxiter:
-      # print "w.shape", w.shape, 'w', w
+      if iterCount == 1 and Step_backtrack:
+        self.ita = getStep_backtrack(w)
       w = w - self.ita*compute_grad(w)
       wIter.append(w)
       iterCount+=1
@@ -144,23 +154,36 @@ class gradientDescent(object):
 
 ''' generate Gaussian distributions with fix covariance'''
 # X, y = dataset_fixed_cov(300, 2, C = np.array([[0.5, -0.23], [0.83, .23]]) ) #n, d, C
-# # pca = PCA()
-# # pca.fit(X)
-# # X_pca = pca.transform(X)
-# # plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, linewidths=0, s=30)
-# # plt.show()
+# pca = PCA()
+# pca.fit(X)
+# X_pca = pca.transform(X)
+# plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, linewidths=0, s=30)
+# plt.show()
 
-# min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
-# X = min_max_scaler.fit_transform(X)
-# rng = np.random.RandomState(19850920)
-# permutation = rng.permutation(len(X))
-# X, y = X[permutation], y[permutation]
-# train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
+import points as pt
+from sklearn.cross_validation import train_test_split
+X, y = pt.dataset_fixed_cov(500, 10, 3) #n, dim, overlapped dist
+print "X.shape", X.shape
+min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
+X = min_max_scaler.fit_transform(X)
+rng = np.random.RandomState(19850920)
+permutation = rng.permutation(len(X))
+X, y = X[permutation], y[permutation]
+train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
+# pt.plotPCA(X, y)
 
-# w = np.array([0, 0])
-# mygd = gradientDescent(train_X, train_y)
-# print mygd.my_gradient_decent(w)
+min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
+X = min_max_scaler.fit_transform(X)
+rng = np.random.RandomState(19850920)
+permutation = rng.permutation(len(X))
+X, y = X[permutation], y[permutation]
+train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
 
+n, dim = X.shape
+w = np.zeros(dim)
+mygd = gradientDescent(train_X, train_y)
+# mygd.my_gradient_decent(w)
+wIter, w, iterCount = mygd.my_gradient_decent(w, maxiter=50, ita=0.1, c=1, Step_backtrack=True)
 '''----------------------------------------------'''
 
 
