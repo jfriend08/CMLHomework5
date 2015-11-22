@@ -51,20 +51,22 @@ def selectGenre(X, y, selectGenre):
 
   return X_new, y_new
 
-def MFCC(signal, sr=22050):
-  return librosa.feature.mfcc(y=np.array(signal), sr=sr, n_mfcc=12)
+
 
 def featureExtraction(X, transpose=True):
+  def MFCC(signal, sr=22050):
+    return librosa.feature.mfcc(y=np.array(signal), sr=sr, n_mfcc=12)
+
   X = np.array([map(MFCC, song) for song in X])
   # X = np.array([[MFCC(clip) for clip in song] for song in X])
   print "After MFCC X.shape", X.shape
   X_train_flattened = [val for sublist in X for val in sublist]
   print "X_train_flattened.shape", np.array(X_train_flattened).shape
-  librosa.display.specshow(X_train_flattened[0], x_axis='time')
-  plt.colorbar()
-  plt.title('MFCC X_train_flattened[0]')
-  plt.tight_layout()
-  plt.show()
+  # librosa.display.specshow(X_train_flattened[0], x_axis='time')
+  # plt.colorbar()
+  # plt.title('MFCC X_train_flattened[0]')
+  # plt.tight_layout()
+  # plt.show()
 
   if transpose:
     X_train_flattened = np.array(map(np.transpose, X_train_flattened))
@@ -81,6 +83,7 @@ class miniBatchKmeans(object):
     self.max_iter = kwargs.get('max_iter', 100)
     self.batch_size = kwargs.get('batch_size', 100)
     self.randState = kwargs.get('randState', 1985)
+    self.DisAndCenter = []
 
   def getClosestDist(self, centers, x, returnIdx=False):
     min_dis = sys.float_info.max
@@ -140,9 +143,6 @@ class miniBatchKmeans(object):
   def minibatchCenterUpdate(self, X, centroids):
     C = self.getCloestCenter(centroids, X)
 
-
-
-
   def _mini_batch_step(self, X, centers, counts, **kwargs):
     compute_squared_diff = kwargs.get('compute_squared_diff', False)
     x2cloestC = np.array(self.getCloestCenter(centers, X))
@@ -169,7 +169,10 @@ class miniBatchKmeans(object):
           squared_diff += np.dot(diff, diff)
     return squared_diff
 
-  def run(self, X):
+  def getBestCentroids(self):
+    return sorted(self.DisAndCenter, key=lambda tup: tup[0])[0]
+
+  def fix(self, X):
     n_samples, n_features = X.shape
     counts = np.zeros(self.n_clusters, dtype=np.int32)
     rng = np.random.RandomState(self.randState)
@@ -181,20 +184,37 @@ class miniBatchKmeans(object):
     shuffle_indices = rng.random_integers(0, n_samples - 1, n_samples)
     X = X[shuffle_indices] #shuffle samples
 
+
     centroids = self.initCentroids(X, self.initMethod, self.n_clusters)
     squared_diff = self._mini_batch_step(X, centroids, counts, compute_squared_diff=True) #list is iterable, will be updated inside _mini_batch_step
-
+    self.DisAndCenter.append((squared_diff, centroids))
+    noImproveCount = 0
+    improvement = 0
     for iteration_idx in range(n_iter):
-      print "squared_diff", squared_diff
+      print "round:", iteration_idx, "squared_diff", squared_diff, "noImproveCount", noImproveCount, "improvement", improvement
       minibatch_indices = rng.random_integers(0, n_samples - 1, self.batch_size)
       squared_diff = self._mini_batch_step(X[minibatch_indices], centroids, counts, compute_squared_diff=True)
 
+      improvement = abs(self.DisAndCenter[-1][0] - squared_diff)/self.DisAndCenter[-1][0]
+
+      if improvement < 0.0001:
+        noImproveCount+=1
+      else:
+        noImproveCount=0
+
+      self.DisAndCenter.append((squared_diff, centroids))
+
+      if noImproveCount > 20:
+        break
+
+    return self
 
 
 
 
 
-X, y = getData("../homework2/data/data_small8.in", )
+
+X, y = getData("../homework2/data/data_small5.in", )
 X_new, y_new = selectGenre(X, y, 0)
 
 print "X_new.shape", X_new.shape, "y_new.shape", y_new.shape
@@ -207,8 +227,13 @@ train_X, test_X, train_y, test_y = train_test_split(X_new, y_new, train_size=0.8
 
 X_new_features = featureExtraction(train_X)
 print "X_new_features.shape", X_new_features.shape
-mbk = miniBatchKmeans(8, max_iter=600, batch_size=50)
-mbk.run(X_new_features)
+mbk = miniBatchKmeans(8, max_iter=100, batch_size=10000)
+mbk.fix(X_new_features)
+distortion, centroids = mbk.getBestCentroids()
+print "distortion", distortion, "centroids.shape", centroids.shape
+print centroids
+
+
 
 # X, y = pt.dataset_fixed_cov(500, 10, 3) #n, dim, overlapped dist
 # print "X.shape", X.shape
