@@ -13,7 +13,7 @@ def dataset_fixed_cov(n,dim, dist):
   C = np.random.normal(0, 1, (dim, dim))
   X = np.r_[np.dot(np.random.randn(n, dim), C),
             np.dot(np.random.randn(n, dim), C) + dist*np.ones(dim)]
-  y = np.hstack((np.zeros(n), np.ones(n)))
+  y = np.hstack((-1*np.ones(n), np.ones(n)))
   return X, y
 
 def plotPCA(X, y):

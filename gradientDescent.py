@@ -17,6 +17,15 @@ def lossHuberHinge (yt):
   else:
     return ((1+h-yt)**2)/(4*h)
 
+def getAccuracyOverIteration(wIter, X, y):
+  def getAccuracy(w, X, y):
+    predict = np.apply_along_axis(lambda eachx: np.dot(w,eachx), 1, X)
+    diff = predict*y
+    return len(np.where(diff>0)[0])/float(len(X))
+  accuracy = map(lambda w: getAccuracy(w, X, y), wIter)
+  return accuracy
+
+
 # generate datasets
 def dataset_fixed_cov(n, dim, C):
   '''Generate 2 Gaussians samples with the same covariance matrix'''
@@ -86,13 +95,12 @@ class gradientDescent(object):
     wx = np.apply_along_axis(lambda x: np.dot(w, x), 1, self.X)
     return np.dot(w, w) + (self.c/n)*sum(np.apply_along_axis(self.lossF, 1, zip(self.y, wx)) )
 
-
   def compute_grad(self, w):
     unit = np.ones(self.X.shape[1])
     wx = map(lambda x: np.dot(w, x), self.X)
     dirwx = map(lambda x: np.dot(unit, x), self.X)
     result = map(lambda x: self.lossF_dir(w, self.X, x), zip(self.y, wx, dirwx))
-    print "sum(result)", sum(result)
+    # print "sum(result)", sum(result)
     return 2*w + sum(result)
 
     # unit = np.ones(self.X.shape[1])
@@ -115,35 +123,47 @@ class gradientDescent(object):
   def my_gradient_decent(self, w, **kwargs):
     self.h = kwargs.get('h', 0.3)
     self.c = kwargs.get('c', 1)
-    self.maxiter = kwargs.get('maxiter', 1000)
+    self.maxiter = kwargs.get('maxiter', 100)
     self.ita = kwargs.get('ita', 0.11)
+    Step_backtrack = kwargs.get('Step_backtrack', False)
+    compute_obj = kwargs.get('compute_obj', self.compute_obj) #user can specify the function
+    compute_grad = kwargs.get('compute_grad', self.compute_grad) #user can specify the function
     iterCount = 0
-
+    wIter = [w]
+    if Step_backtrack:
+      
+    print "------------------", "h", self.h, "c", self.c, "maxiter", self.maxiter, "ita", self.ita, "------------------"
     while iterCount < self.maxiter:
-      print "w.shape", w.shape, 'w', w
-      w = w - self.ita*self.compute_grad(w)
-    return w, iterCount
+      # print "w.shape", w.shape, 'w', w
+      w = w - self.ita*compute_grad(w)
+      wIter.append(w)
+      iterCount+=1
+    return wIter, w, iterCount
 
 
 
 ''' generate Gaussian distributions with fix covariance'''
-X, y = dataset_fixed_cov(300, 2, C = np.array([[0.5, -0.23], [0.83, .23]]) ) #n, d, C
-# pca = PCA()
-# pca.fit(X)
-# X_pca = pca.transform(X)
-# plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, linewidths=0, s=30)
-# plt.show()
+# X, y = dataset_fixed_cov(300, 2, C = np.array([[0.5, -0.23], [0.83, .23]]) ) #n, d, C
+# # pca = PCA()
+# # pca.fit(X)
+# # X_pca = pca.transform(X)
+# # plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, linewidths=0, s=30)
+# # plt.show()
 
-min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
-X = min_max_scaler.fit_transform(X)
-rng = np.random.RandomState(19850920)
-permutation = rng.permutation(len(X))
-X, y = X[permutation], y[permutation]
-train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
+# min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
+# X = min_max_scaler.fit_transform(X)
+# rng = np.random.RandomState(19850920)
+# permutation = rng.permutation(len(X))
+# X, y = X[permutation], y[permutation]
+# train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
 
-w = np.array([0, 0])
-mygd = gradientDescent(train_X, train_y)
-print mygd.my_gradient_decent(w)
+# w = np.array([0, 0])
+# mygd = gradientDescent(train_X, train_y)
+# print mygd.my_gradient_decent(w)
+
+'''----------------------------------------------'''
+
+
 # w = np.array([1, 1, 0, 1, 0])
 # mygd.compute_obj(w)
 # mygd.compute_grad(w)
