@@ -1,10 +1,13 @@
 import numpy as np
 import random, sys
 import points as pt
+import librosa
+import cPickle as pickle
 from sklearn import preprocessing
 from sklearn.cross_validation import train_test_split
 from  scipy.spatial.distance import euclidean
-import cPickle as pickle
+from librosa.util import normalize
+from pylab import plt
 
 def dataset_fixed_cov(n, dim, C):
   '''Generate 2 Gaussians samples with the same covariance matrix'''
@@ -26,7 +29,7 @@ def getData(path, **kwargs):
     songs = samples[genere]
     for song_idx in xrange(len(songs)):
       song = songs[song_idx]
-      song = [clip[:66058] for clip in song] #some clip has different num of signal
+      song = [clip[:66000] for clip in song] #some clip has different num of signal
       X.append(song)
       y.append(genere_idx)
   print "X size/number of songs:", len(X)
@@ -47,6 +50,29 @@ def selectGenre(X, y, selectGenre):
   y_new = np.r_[selecty,-1*np.ones(len(selectX))]
 
   return X_new, y_new
+
+def MFCC(signal, sr=22050):
+  return librosa.feature.mfcc(y=np.array(signal), sr=sr, n_mfcc=12)
+
+def featureExtraction(X, transpose=True):
+  X = np.array([map(MFCC, song) for song in X])
+  # X = np.array([[MFCC(clip) for clip in song] for song in X])
+  print "After MFCC X.shape", X.shape
+  X_train_flattened = [val for sublist in X for val in sublist]
+  print "X_train_flattened.shape", np.array(X_train_flattened).shape
+  librosa.display.specshow(X_train_flattened[0], x_axis='time')
+  plt.colorbar()
+  plt.title('MFCC X_train_flattened[0]')
+  plt.tight_layout()
+  plt.show()
+
+  if transpose:
+    X_train_flattened = np.array(map(np.transpose, X_train_flattened))
+    print "After transpose X_train_flattened.shape", X_train_flattened.shape
+
+  X_train_flattened_norm = normalize(X_train_flattened, norm=2)
+  X_train_flattened_norm_final = np.array([mfcc for clip in X_train_flattened_norm for mfcc in clip])
+  return X_train_flattened_norm_final
 
 class miniBatchKmeans(object):
   def __init__(self, n_clusters=8, initMethod='k-means++', **kwargs):
@@ -166,16 +192,27 @@ class miniBatchKmeans(object):
 
 
 
-# # X, y = pt.dataset_fixed_cov(500, 10, 3) #n, dim, overlapped dist
-# print "X.shape", X.shape
-# # pt.plotPCA(X, y)
+
 
 X, y = getData("../homework2/data/data_small8.in", )
 X_new, y_new = selectGenre(X, y, 0)
+
 print "X_new.shape", X_new.shape, "y_new.shape", y_new.shape
 print y_new
 
+rng = np.random.RandomState(19850920)
+permutation = rng.permutation(len(X_new))
+X_new, y_new = X_new[permutation], y_new[permutation]
+train_X, test_X, train_y, test_y = train_test_split(X_new, y_new, train_size=0.8, random_state=2010)
 
+X_new_features = featureExtraction(train_X)
+print "X_new_features.shape", X_new_features.shape
+mbk = miniBatchKmeans(8, max_iter=600, batch_size=50)
+mbk.run(X_new_features)
+
+# X, y = pt.dataset_fixed_cov(500, 10, 3) #n, dim, overlapped dist
+# print "X.shape", X.shape
+# # pt.plotPCA(X, y)
 # min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
 # X = min_max_scaler.fit_transform(X)
 # rng = np.random.RandomState(19850920)
