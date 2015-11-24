@@ -18,16 +18,34 @@ class svm(object):
     c = kwargs.get('c', 1)
     maxiter = kwargs.get('maxiter', 100)
     ita = kwargs.get('ita', 0.11)
+    Step_backtrack = kwargs.get('Step_backtrack', False)
+    stopMethod = kwargs.get('stopMethod', None) #user can specify the function
     mygd = gd.gradientDescent(X, y)
     if compute_objF=="Default" or compute_gradF=="Default":
-      return mygd.my_gradient_decent(w, h=h, c=c, maxiter=maxiter, ita=ita)
+      return mygd.my_gradient_decent(w, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod)
     else:
-      return mygd.my_gradient_decent(w, compute_obj=compute_objF, compute_grad=compute_gradF, h=h, c=c, maxiter=maxiter, ita=ita)
+      return mygd.my_gradient_decent(w, compute_obj=compute_objF, compute_grad=compute_gradF, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod)
+
+  def sgd (self, X, y, w, compute_objF, compute_gradF, **kwargs):
+    print "start sgd"
+    h = kwargs.get('h', 0.3)
+    c = kwargs.get('c', 1)
+    maxiter = kwargs.get('maxiter', 5)
+    ita = kwargs.get('ita', 0.11)
+    Step_backtrack = kwargs.get('Step_backtrack', False)
+    stopMethod = kwargs.get('stopMethod', None) #user can specify the function
+    mysgd = gd.gradientDescent(X, y)
+    if compute_objF=="Default" or compute_gradF=="Default":
+      return mysgd.my_sgd(w, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod)
+    else:
+      return mysgd.my_sgd(w, compute_obj=compute_objF, compute_grad=compute_gradF, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod)
 
   def fit(self, X, y, w, **kwargs):
     method = kwargs.get('method', 'gd')
     compute_obj = kwargs.get('compute_obj', 'Default')
     compute_grad = kwargs.get('compute_grad', 'Default')
+    Step_backtrack = kwargs.get('Step_backtrack', False)
+    stopMethod = kwargs.get('stopMethod', None) #user can specify the function
     h = kwargs.get('h', 0.3)
     c = kwargs.get('c', 1)
     maxiter = kwargs.get('maxiter', 100)
@@ -35,7 +53,7 @@ class svm(object):
 
     if isinstance(method, str) and method == 'gd':
       print "Running gradient descent"
-      return self.gd(X, y, w, compute_obj, compute_grad, h=h, c=c, maxiter=maxiter, ita=ita)
+      return self.gd(X, y, w, compute_obj, compute_grad, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod)
     elif isinstance(method, str) and method == 'sgd':
       print "Running stochastic gradient descent"
       return

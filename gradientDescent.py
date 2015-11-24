@@ -96,16 +96,19 @@ class gradientDescent(object):
     return np.dot(w, w) + (self.c/n)*sum(np.apply_along_axis(self.lossF, 1, zip(self.y, wx)) )
 
   def compute_grad(self, w):
+    n = self.X.shape[0]
     unit = np.ones(self.X.shape[1])
     wx = map(lambda x: np.dot(w, x), self.X)
     dirwx = map(lambda x: np.dot(unit, x), self.X)
     result = map(lambda x: self.lossF_dir(w, self.X, x), zip(self.y, wx, dirwx))
-    # print "sum(result)", sum(result)
     return 2*w + sum(result)
 
-    # unit = np.ones(self.X.shape[1])
-    # wx = np.apply_along_axis(lambda x: np.dot(unit, x), 1, self.X)
-    # return 2*w + sum(map(self.lossF, zip(self.y, wx)) )
+  def compute_grad_sgd(self, w, xi, yi):
+    unit = np.ones(self.X.shape[1])
+    wx = np.dot(w, xi)
+    dirwx = np.dot(unit, xi)
+    # return 2*w + self.lossF_dir(w, self.X, (yi, wx, dirwx))
+    return 2*w + (self.c/self.h)*self.lossF_dir(w, self.X, (yi, wx, dirwx))
 
   def getNumericalResultAtEachDirection(self, compute_obj, w, epslon, eachdir):
     return (compute_obj(w+epslon*eachdir) - compute_obj(w-epslon*eachdir))/(2*epslon)
@@ -120,6 +123,73 @@ class gradientDescent(object):
     print "analyticResult", analyticResult
     return sum(numericalResult-analyticResult)/sum(analyticResult)
 
+  def my_sgd(self, w, **kwargs):
+    self.h = kwargs.get('h', 0.3)
+    self.c = kwargs.get('c', 1)
+    self.maxiter = kwargs.get('maxiter', 100)
+    self.ita = kwargs.get('ita', 0.11)
+    Step_backtrack = kwargs.get('Step_backtrack', False)
+    compute_obj = kwargs.get('compute_obj', self.compute_obj) #user can specify the function
+    compute_grad = kwargs.get('compute_grad', self.compute_grad) #user can specify the function
+    stopMethod = kwargs.get('stopMethod', None) #user can specify the function
+    iterCount = 0
+    previousVal = None
+    averagedwIter = []
+    wAtIter = []
+    allw = []
+
+    print "stopMethod", stopMethod
+    if stopMethod == "performance":
+      train_X, vali_X, train_y, vali_y = train_test_split(self.X, self.y, train_size=0.9, random_state=2010)
+      print "Before self.X.shape", self.X.shape
+      self.X = train_X
+      self.y = train_y
+      print "After self.X.shape", self.X.shape
+
+    def getStep_backtrack(w):
+      if Step_backtrack:
+        direction = compute_grad(w)
+        t = 1
+        a = 1
+        b = 0.9
+        dw = np.ones(len(w))
+        while compute_obj(w+t*dw) > compute_obj(w) + a*t*np.dot(compute_grad(w),dw):
+          t *= b
+        print "Step size update:", self.ita, "-->", t
+        return t
+
+    def stoppingMethod(w, previousVal, wIter):
+      if stopMethod == "optimize":
+        newVal = self.compute_obj(w)
+        if previousVal == None:
+          return True
+        else:
+          return abs(newVal-previousVal)/float(previousVal) > 0.001
+      elif stopMethod == "performance":
+        if len(wIter) >=10:
+          return 0.9*(1-np.amin(getAccuracyOverIteration(wIter[-10:], vali_X, vali_y))) > (1-np.amin(getAccuracyOverIteration([w], vali_X, vali_y)))
+        return True
+      else:
+        return True
+
+    n, dim = self.X.shape
+    print "self.X.shape", self.X.shape
+    print "self.maxiter*n", self.maxiter*n
+    while iterCount < self.maxiter*n and stoppingMethod(w, previousVal, wAtIter):
+      if iterCount == 1 and Step_backtrack:
+        self.ita = getStep_backtrack(w)
+      allw.append(w)
+      wAtIter.append(w)
+      previousVal = self.compute_obj(w)
+      w = w - self.ita*self.compute_grad_sgd(w, self.X[iterCount%n], self.y[iterCount%n])
+      iterCount+=1
+      if iterCount%n == 0:
+        permutation = rng.permutation(n)
+        self.X, self.y = self.X[permutation], self.y[permutation]
+        averagedwIter.append(np.mean(wAtIter, axis=0))
+        wAtIter = []
+    return averagedwIter, allw, w, iterCount
+
   def my_gradient_decent(self, w, **kwargs):
     self.h = kwargs.get('h', 0.3)
     self.c = kwargs.get('c', 1)
@@ -128,62 +198,96 @@ class gradientDescent(object):
     Step_backtrack = kwargs.get('Step_backtrack', False)
     compute_obj = kwargs.get('compute_obj', self.compute_obj) #user can specify the function
     compute_grad = kwargs.get('compute_grad', self.compute_grad) #user can specify the function
+    stopMethod = kwargs.get('stopMethod', None) #user can specify the function
     iterCount = 0
-    wIter = [w]
+    previousVal = None
+    wIter = []
+
+    print "stopMethod", stopMethod
+    if stopMethod == "performance":
+      train_X, vali_X, train_y, vali_y = train_test_split(self.X, self.y, train_size=0.9, random_state=2010)
+      print "Before self.X.shape", self.X.shape
+      self.X = train_X
+      self.y = train_y
+      print "After self.X.shape", self.X.shape
+
     def getStep_backtrack(w):
       if Step_backtrack:
         direction = compute_grad(w)
         t = 1
-        a = 0.9
-        b = 0.5
+        a = 1
+        b = 0.9
         dw = np.ones(len(w))
         while compute_obj(w+t*dw) > compute_obj(w) + a*t*np.dot(compute_grad(w),dw):
           t *= b
+        print "Step size update:", self.ita, "-->", t
         return t
 
+    def stoppingMethod(w, previousVal, wIter):
+      if stopMethod == "optimize":
+        newVal = self.compute_obj(w)
+        if previousVal == None:
+          return True
+        else:
+          return abs(newVal-previousVal)/float(previousVal) > 0.001
+      elif stopMethod == "performance":
+        if len(wIter) >=10:
+          return 0.9*(1-np.amin(getAccuracyOverIteration(wIter[-10:], vali_X, vali_y))) > (1-np.amin(getAccuracyOverIteration([w], vali_X, vali_y)))
+        return True
+      else:
+        return True
+
     print "------------------", "h", self.h, "c", self.c, "maxiter", self.maxiter, "ita", self.ita, "------------------"
-    while iterCount < self.maxiter:
+    while iterCount < self.maxiter and stoppingMethod(w, previousVal, wIter):
       if iterCount == 1 and Step_backtrack:
         self.ita = getStep_backtrack(w)
-      w = w - self.ita*compute_grad(w)
       wIter.append(w)
+      previousVal = self.compute_obj(w)
+      w = w - self.ita*compute_grad(w)
       iterCount+=1
     return wIter, w, iterCount
 
 
 
 ''' generate Gaussian distributions with fix covariance'''
-# X, y = dataset_fixed_cov(300, 2, C = np.array([[0.5, -0.23], [0.83, .23]]) ) #n, d, C
-# pca = PCA()
-# pca.fit(X)
-# X_pca = pca.transform(X)
-# plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, linewidths=0, s=30)
-# plt.show()
+# # X, y = dataset_fixed_cov(300, 2, C = np.array([[0.5, -0.23], [0.83, .23]]) ) #n, d, C
+# # pca = PCA()
+# # pca.fit(X)
+# # X_pca = pca.transform(X)
+# # plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, linewidths=0, s=30)
+# # plt.show()
 
 import points as pt
 from sklearn.cross_validation import train_test_split
-X, y = pt.dataset_fixed_cov(500, 10, 3) #n, dim, overlapped dist
+X, y = pt.dataset_fixed_cov(1000, 10, 3) #n, dim, overlapped dist
 print "X.shape", X.shape
 min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
 X = min_max_scaler.fit_transform(X)
 rng = np.random.RandomState(19850920)
 permutation = rng.permutation(len(X))
 X, y = X[permutation], y[permutation]
-train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
+train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.3, random_state=2010)
 # pt.plotPCA(X, y)
 
-min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
-X = min_max_scaler.fit_transform(X)
-rng = np.random.RandomState(19850920)
-permutation = rng.permutation(len(X))
-X, y = X[permutation], y[permutation]
-train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
+
+# n, dim = X.shape
+# w = np.zeros(dim)
+# mygd = gradientDescent(train_X, train_y)
+# # mygd.my_gradient_decent(w)
+# wIter, w, iterCount = mygd.my_gradient_decent(w, maxiter=50, ita=0.1, c=1, Step_backtrack=False, stopMethod="performance")
+# print w, iterCount
 
 n, dim = X.shape
 w = np.zeros(dim)
 mygd = gradientDescent(train_X, train_y)
 # mygd.my_gradient_decent(w)
-wIter, w, iterCount = mygd.my_gradient_decent(w, maxiter=50, ita=0.1, c=1, Step_backtrack=True)
+averagedwIter, allw, w, iterCount = mygd.my_sgd(w, maxiter=5, ita=0.1, c=1, Step_backtrack=False, stopMethod="optimize")
+
+print w, iterCount
+print "averagedwIter[:5]\n", averagedwIter[:5]
+print "accuracy averagedwIter over iteration:\n", getAccuracyOverIteration(averagedwIter, train_X, train_y)
+print "objective of averagedwIter over iteration:\n", map(mygd.compute_obj, averagedwIter)
+print "objective of allw over iteration:\n", map(mygd.compute_obj, allw)
 '''----------------------------------------------'''
 
 
