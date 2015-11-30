@@ -128,10 +128,14 @@ class gradientDescent(object):
     self.c = kwargs.get('c', 1)
     self.maxiter = kwargs.get('maxiter', 100)
     self.ita = kwargs.get('ita', 0.11)
+    self.itaOverIteration = kwargs.get('itaOverIteration', False)
+    self.tnot = kwargs.get('tnot', 1)
     Step_backtrack = kwargs.get('Step_backtrack', False)
     compute_obj = kwargs.get('compute_obj', self.compute_obj) #user can specify the function
     compute_grad = kwargs.get('compute_grad', self.compute_grad) #user can specify the function
     stopMethod = kwargs.get('stopMethod', None) #user can specify the function
+
+    rng = np.random.RandomState(19850920)
     iterCount = 0
     previousVal = None
     averagedwIter = []
@@ -176,6 +180,8 @@ class gradientDescent(object):
     print "self.X.shape", self.X.shape
     print "self.maxiter*n", self.maxiter*n
     while iterCount < self.maxiter*n and stoppingMethod(w, previousVal, wAtIter):
+      if self.itaOverIteration:
+        self.ita = (self.ita)/(iterCount+self.tnot)
       if iterCount == 1 and Step_backtrack:
         self.ita = getStep_backtrack(w)
       allw.append(w)
@@ -188,6 +194,8 @@ class gradientDescent(object):
         self.X, self.y = self.X[permutation], self.y[permutation]
         averagedwIter.append(np.mean(wAtIter, axis=0))
         wAtIter = []
+    if len(averagedwIter) == 0:
+      averagedwIter.append(np.mean(wAtIter, axis=0))
     return averagedwIter, allw, w, iterCount
 
   def my_gradient_decent(self, w, **kwargs):
@@ -257,16 +265,16 @@ class gradientDescent(object):
 # # plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, linewidths=0, s=30)
 # # plt.show()
 
-import points as pt
-from sklearn.cross_validation import train_test_split
-X, y = pt.dataset_fixed_cov(1000, 10, 3) #n, dim, overlapped dist
-print "X.shape", X.shape
-min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
-X = min_max_scaler.fit_transform(X)
-rng = np.random.RandomState(19850920)
-permutation = rng.permutation(len(X))
-X, y = X[permutation], y[permutation]
-train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.3, random_state=2010)
+# import points as pt
+# from sklearn.cross_validation import train_test_split
+# X, y = pt.dataset_fixed_cov(1000, 10, 3) #n, dim, overlapped dist
+# print "X.shape", X.shape
+# min_max_scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1), copy=True)
+# X = min_max_scaler.fit_transform(X)
+# rng = np.random.RandomState(19850920)
+# permutation = rng.permutation(len(X))
+# X, y = X[permutation], y[permutation]
+# train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.3, random_state=2010)
 # pt.plotPCA(X, y)
 
 
@@ -277,17 +285,17 @@ train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.3, random
 # wIter, w, iterCount = mygd.my_gradient_decent(w, maxiter=50, ita=0.1, c=1, Step_backtrack=False, stopMethod="performance")
 # print w, iterCount
 
-n, dim = X.shape
-w = np.zeros(dim)
-mygd = gradientDescent(train_X, train_y)
-# mygd.my_gradient_decent(w)
-averagedwIter, allw, w, iterCount = mygd.my_sgd(w, maxiter=5, ita=0.1, c=1, Step_backtrack=False, stopMethod="optimize")
+# n, dim = X.shape
+# w = np.zeros(dim)
+# mygd = gradientDescent(train_X, train_y)
+# # mygd.my_gradient_decent(w)
+# averagedwIter, allw, w, iterCount = mygd.my_sgd(w, maxiter=5, ita=0.1, c=1, Step_backtrack=False, stopMethod="optimize")
 
-print w, iterCount
-print "averagedwIter[:5]\n", averagedwIter[:5]
-print "accuracy averagedwIter over iteration:\n", getAccuracyOverIteration(averagedwIter, train_X, train_y)
-print "objective of averagedwIter over iteration:\n", map(mygd.compute_obj, averagedwIter)
-print "objective of allw over iteration:\n", map(mygd.compute_obj, allw)
+# print w, iterCount
+# print "averagedwIter[:5]\n", averagedwIter[:5]
+# print "accuracy averagedwIter over iteration:\n", getAccuracyOverIteration(averagedwIter, train_X, train_y)
+# print "objective of averagedwIter over iteration:\n", map(mygd.compute_obj, averagedwIter)
+# print "objective of allw over iteration:\n", map(mygd.compute_obj, allw)
 '''----------------------------------------------'''
 
 

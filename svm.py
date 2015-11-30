@@ -35,10 +35,12 @@ class svm(object):
     Step_backtrack = kwargs.get('Step_backtrack', False)
     stopMethod = kwargs.get('stopMethod', None) #user can specify the function
     mysgd = gd.gradientDescent(X, y)
+    itaOverIteration = kwargs.get('itaOverIteration', False)
+    tnot = kwargs.get('tnot', 1)
     if compute_objF=="Default" or compute_gradF=="Default":
-      return mysgd.my_sgd(w, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod)
+      return mysgd.my_sgd(w, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod, itaOverIteration=itaOverIteration, tnot=tnot)
     else:
-      return mysgd.my_sgd(w, compute_obj=compute_objF, compute_grad=compute_gradF, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod)
+      return mysgd.my_sgd(w, compute_obj=compute_objF, compute_grad=compute_gradF, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod, itaOverIteration=itaOverIteration, tnot=tnot)
 
   def fit(self, X, y, w, **kwargs):
     method = kwargs.get('method', 'gd')
@@ -50,13 +52,16 @@ class svm(object):
     c = kwargs.get('c', 1)
     maxiter = kwargs.get('maxiter', 100)
     ita = kwargs.get('ita', 0.11)
+    itaOverIteration = kwargs.get('itaOverIteration', False)
+    tnot = kwargs.get('tnot', 1)
 
     if isinstance(method, str) and method == 'gd':
       print "Running gradient descent"
       return self.gd(X, y, w, compute_obj, compute_grad, h=h, c=c, maxiter=maxiter, ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod)
     elif isinstance(method, str) and method == 'sgd':
       print "Running stochastic gradient descent"
-      return
+      return self.sgd(X, y, w, compute_obj, compute_grad, h=h, c=c, maxiter=maxiter, 
+        ita=ita, Step_backtrack=Step_backtrack, stopMethod=stopMethod, itaOverIteration=itaOverIteration, tnot=tnot)
 
 
 # X, y = pt.dataset_fixed_cov(500, 10, 3) #n, dim, overlapped dist
@@ -69,8 +74,13 @@ class svm(object):
 # train_X, test_X, train_y, test_y = train_test_split(X, y, train_size=0.1, random_state=2010)
 # # pt.plotPCA(X, y)
 
-# n, dim = X.shape
+# n, dim = train_X.shape
 # mysvm = svm()
+# mygd = gd.gradientDescent(train_X, train_y)
 # w = np.zeros(dim)
-# wIter, w, iterCount = mysvm.fit(train_X, train_y, w, method="gd", compute_obj="Default", compute_grad="Default", maxiter=10, ita=0.11)
-# print wIter
+# averagedwIter, allw, w, iterCount = mysvm.fit(train_X, train_y, w, method="sgd", compute_obj="Default", compute_grad="Default", maxiter=3, ita=0.11, stopMethod="optimize")
+# print w, iterCount
+# print "averagedwIter[:5]\n", averagedwIter[:5]
+# print "accuracy averagedwIter over iteration:\n", gd.getAccuracyOverIteration(averagedwIter, train_X, train_y)
+# print "objective of averagedwIter over iteration:\n", map(mygd.compute_obj, averagedwIter)
+# print "objective of allw over iteration:\n", map(mygd.compute_obj, allw)
